@@ -1,13 +1,13 @@
 from collections import Counter, OrderedDict
-from typing import Callable, Generic, Type, TypeVar
+from typing import Callable, Generic, Mapping, MutableMapping, Type, TypeVar
 
 C = TypeVar("C")
 
 
 class Registry(Generic[C]):
-    def __init__(self, default: type | None = None) -> None:
-        self.storage: dict[str, type[C]] = {}
-        self.default: type | None = default
+    def __init__(self, default: Type[C] | None = None) -> None:
+        self.storage: dict[str, Type[C]] = {}
+        self.default: Type[C] | None = default
 
     def register(self, class_name: str) -> Callable[[Type[C]], Type[C]]:
         """Method for registering the interface"""
@@ -21,7 +21,7 @@ class Registry(Generic[C]):
 
         return decorator
 
-    def dispatch(self, class_name: str) -> Type[C] | type:
+    def dispatch(self, class_name: str) -> Type[C]:
         """Method of dispatching the registered interface"""
 
         class_registered = self.storage.get(class_name, None)
@@ -34,8 +34,8 @@ class Registry(Generic[C]):
 
 
 if __name__ == "__main__":
-    logs_default = Registry[dict](default=dict)
-    logs = Registry[dict]()
+    logs_default = Registry[Mapping](default=dict)
+    logs = Registry[Mapping]()
     logs_default.register("very_useful")(Counter)
     logs.register("very_useful")(Counter)
     logs_default.register("not_useful")(OrderedDict)

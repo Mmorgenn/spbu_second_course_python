@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Mapping, MutableMapping
 
 import pytest
 
@@ -8,36 +7,40 @@ from src.Homework.Homework_1.registry import *
 
 @dataclass
 class TestRegistry:
-    logs = Registry[Mapping]()
-    logs_arg = Registry[dict](default=dict)
+    logs = Registry[MutableMapping]()
+    logs_arg = Registry[Mapping](default=dict)
     empty_logs = Registry[MutableMapping]()
-    empty_logs_arg = Registry[list](default=list)
+    empty_logs_arg = Registry[Mapping](default=Counter)
 
     def __post_init__(self):
         @self.logs.register("foo")
-        class Foo(Mapping):
+        class Foo(MutableMapping):
             pass
 
         @self.logs.register("boo")
-        class Boo(Mapping):
+        class Boo(MutableMapping):
             pass
 
         @self.logs.register("doo")
-        class Doo(Mapping):
+        class Doo(MutableMapping):
             pass
 
         @self.logs_arg.register("super_dict")
-        class SuperDict(dict):
+        class SuperDict(Mapping):
             pass
 
         @self.logs_arg.register("slow_dict")
-        class SlowDict(dict):
+        class SlowDict(Mapping):
             pass
 
         class Sui(Mapping):
             pass
 
+        class Bum(MutableMapping):
+            pass
+
         self.mapping_class = Sui
+        self.mutablemapping_class = Bum
 
 
 TESTER = TestRegistry()
@@ -59,8 +62,8 @@ def test_register(logs, expected):
 @pytest.mark.parametrize(
     "logs,name,parent_class",
     (
-        (TESTER.logs, "foo", Mapping),
-        (TESTER.logs_arg, "slow_dict", dict),
+        (TESTER.logs, "foo", MutableMapping),
+        (TESTER.logs_arg, "slow_dict", Mapping),
     ),
 )
 def test_dispatch(logs, name, parent_class):
@@ -68,7 +71,7 @@ def test_dispatch(logs, name, parent_class):
 
 
 @pytest.mark.parametrize(
-    "logs,name,expected", ((TESTER.logs_arg, "fast_dict", dict), (TESTER.empty_logs_arg, "any_name", list))
+    "logs,name,expected", ((TESTER.logs_arg, "fast_dict", dict), (TESTER.empty_logs_arg, "any_name", Counter))
 )
 def test_default_dispatch(logs, name, expected):
     assert logs.dispatch(name) == expected
@@ -81,7 +84,8 @@ def test_dispatch_error(logs, name):
 
 
 @pytest.mark.parametrize(
-    "logs,name,cls", ((TESTER.logs, "foo", TESTER.mapping_class), (TESTER.logs_arg, "super_dict", Counter))
+    "logs,name,cls",
+    ((TESTER.logs, "foo", TESTER.mutablemapping_class), (TESTER.logs_arg, "super_dict", TESTER.mapping_class)),
 )
 def test_register_error(logs, name, cls):
     with pytest.raises(ValueError):
