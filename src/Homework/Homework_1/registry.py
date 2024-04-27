@@ -12,10 +12,9 @@ class Registry(Generic[C]):
     def register(self, class_name: str) -> Callable[[Type[C]], Type[C]]:
         """Method for registering the interface"""
 
-        if self.storage.get(class_name, None) is not None:
-            raise ValueError(f"{class_name} is already registered!")
-
         def decorator(cls: Type[C]) -> Type[C]:
+            if self.storage.get(class_name, None) is not None:
+                raise ValueError(f"{class_name} is already registered!")
             self.storage[class_name] = cls
             return cls
 
