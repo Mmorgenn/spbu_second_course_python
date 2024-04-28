@@ -76,7 +76,7 @@ class Node(Generic[Key, Value]):
 
     def _del_smallest(self) -> Optional["Node"]:
 
-        def recursion_del(node: Node) -> Node | None:
+        def recursion_del(node: "Node") -> Optional["Node"]:
             if node.left is None:
                 return node.right
             node.left = recursion_del(node.left)
