@@ -45,8 +45,7 @@ class ORM(Generic[T]):
         return result
 
     def dump(self) -> str | None:
-        try:
-            json = asdict(self)
-        except TypeError:
+        json = asdict(self)
+        if json == {}:
             raise TypeError("This is not dataclass")
         return dumps(json)
