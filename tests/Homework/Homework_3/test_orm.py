@@ -51,9 +51,21 @@ def test_get_item(orm, data, keys, expected):
 @pytest.mark.parametrize(
     "orm,data,expected",
     (
-        (Product(), {"name": "apple", "price": 10, "rating": 5, "count": 100}, {"name": "apple", "price": 10, "rating": 5, "count": 100}),
-        (Product(), {"name": "banana", "price": 25, "rating": 4, "count": 123, "type": "fruit"}, {"name": "banana", "price": 25, "rating": 4, "count": 123}),
-        (Weather(), {"temp": 12.5, "wind_speed": 10.5, "humidity": 66}, {"temp": 12.5, "wind_speed": 10.5, "humidity": 66}),
+        (
+            Product(),
+            {"name": "apple", "price": 10, "rating": 5, "count": 100},
+            {"name": "apple", "price": 10, "rating": 5, "count": 100},
+        ),
+        (
+            Product(),
+            {"name": "banana", "price": 25, "rating": 4, "count": 123, "type": "fruit"},
+            {"name": "banana", "price": 25, "rating": 4, "count": 123},
+        ),
+        (
+            Weather(),
+            {"temp": 12.5, "wind_speed": 10.5, "humidity": 66},
+            {"temp": 12.5, "wind_speed": 10.5, "humidity": 66},
+        ),
     ),
 )
 def test_dump(orm, data, expected):
@@ -65,9 +77,27 @@ def test_dump(orm, data, expected):
 @pytest.mark.parametrize(
     "orm,data,key,value,expected",
     (
-        (Product(), {"name": "apple", "price": 10, "rating": 5, "count": 100}, "rating", 1, {"name": "apple", "price": 10, "rating": 1, "count": 100}),
-        (Product(), {"name": "banana", "price": 25, "rating": 4, "count": 123, "type": "fruit"}, "count", 90, {"name": "banana", "price": 25, "rating": 4, "count": 90}),
-        (Weather(), {"temp": 12.5, "wind_speed": 10.5, "humidity": 66}, "temp", 0.0, {"temp": 0.0, "wind_speed": 10.5, "humidity": 66}),
+        (
+            Product(),
+            {"name": "apple", "price": 10, "rating": 5, "count": 100},
+            "rating",
+            1,
+            {"name": "apple", "price": 10, "rating": 1, "count": 100},
+        ),
+        (
+            Product(),
+            {"name": "banana", "price": 25, "rating": 4, "count": 123, "type": "fruit"},
+            "count",
+            90,
+            {"name": "banana", "price": 25, "rating": 4, "count": 90},
+        ),
+        (
+            Weather(),
+            {"temp": 12.5, "wind_speed": 10.5, "humidity": 66},
+            "temp",
+            0.0,
+            {"temp": 0.0, "wind_speed": 10.5, "humidity": 66},
+        ),
     ),
 )
 def test_dump_changed(orm, data, key, value, expected):
