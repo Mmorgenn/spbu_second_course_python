@@ -1,5 +1,5 @@
+import json
 from dataclasses import asdict, dataclass
-from json import dumps
 from typing import Any, Generic, Type, TypeVar
 
 T = TypeVar("T", bound="ORM")
@@ -9,43 +9,57 @@ class JsonError(Exception):
     pass
 
 
-class CustomDescriptor(Generic[T]):
-    def __init__(self, default: str) -> None:
-        self.default = default
+class ORMDescriptor(Generic[T]):
+    def __init__(self, key: str) -> None:
+        self.key = key
+        self.value = None
 
-    def __get__(self, instance: T, owner: Type[T]) -> Any:
-        if not hasattr(instance, "jdata"):
+    def __get__(self, instance: T, owner: Type[T]) -> None:
+        if not hasattr(instance, "__data__"):
             raise JsonError("Json data is missing")
-        value = getattr(instance, f"_{self.default}", self.default)
-        if value is None:
-            new_value = instance.jdata.get(self.default, None)
-            if new_value:
-                setattr(instance, self.default, new_value)
-                return new_value
-            raise JsonError(f"The {self.default} is missing in json data")
-        return value
+
+        if self.value is None:
+            new_value = instance.__data__.get(self.key, None)
+            if new_value is None:
+                raise JsonError(f"The {self.key} is missing in json data")
+            self.value = new_value
+        return self.value
 
     def __set__(self, instance: T, value: Any) -> None:
-        setattr(instance, f"_{self.default}", value)
+        self.value = value
+
+
+class ORMMeta(type):
+    def __new__(cls, name: Any, bases: Any, dct: dict) -> type:
+        branches = {}
+        attrs = []
+        for field_name, field_type in dct["__annotations__"].items():
+            if issubclass(field_type, ORM):
+                branches[field_name] = field_type
+            else:
+                attrs.append(field_name)
+            dct[field_name] = None
+
+        dct["__branches__"] = branches
+        dct["__attrs__"] = attrs
+        return super().__new__(cls, name, bases, dct)
 
 
 @dataclass
-class ORM(Generic[T]):
+class ORM:
     @classmethod
-    def apply_descriptor(cls: Type[T]) -> Type[T]:
-        for name, field in cls.__annotations__.items():
-            setattr(cls, name, CustomDescriptor(name))
-        return cls
+    def parse_json(cls: Type[T], data: dict) -> T:
+        for name in getattr(cls, "__attrs__", []):
+            setattr(cls, name, ORMDescriptor(name))
+        setattr(cls, "__data__", data)
+        new_cls = cls()
+        for name, bcls in getattr(cls, "__branches__", {}).items():
+            small_data = data.get(name, None)
+            if small_data is None:
+                raise JsonError(f"The {name} is missing in json data")
+            setattr(new_cls, name, bcls.parse_json(small_data))
 
-    @classmethod
-    def upload_dict(cls: Type[T], data: dict) -> T:
-        new_cls = cls.apply_descriptor()
-        result = new_cls()
-        setattr(result, "jdata", data)
-        return result
+        return new_cls
 
-    def dump(self) -> str | None:
-        json = asdict(self)
-        if json == {}:
-            raise TypeError("This is not dataclass")
-        return dumps(json)
+    def dump(self) -> str:
+        return json.dumps(asdict(self))

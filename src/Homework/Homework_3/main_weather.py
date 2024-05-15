@@ -5,37 +5,45 @@ from typing import Any
 import matplotlib.pyplot as plt
 import requests
 
-from src.Homework.Homework_3.orm import ORM
+from src.Homework.Homework_3.orm import ORM, ORMMeta
 
 URL = "https://api.openweathermap.org/data/2.5"
 API_KEY = "69122dc7f1c80846ab51a95cab1062de"
 
 
 @dataclass
-class Weather(ORM):
-    id: int | None = None
-    main: str | None = None
-    description: str | None = None
-    icon: str | None = None
+class Weather(ORM, metaclass=ORMMeta):
+    id: int
+    main: str
+    description: str
+    icon: str
 
 
 @dataclass
-class Temperature(ORM):
-    temp: float | None = None
-    feels_like: float | None = None
-    temp_min: float | None = None
-    temp_max: float | None = None
-    pressure: float | None = None
-    humidity: int | None = None
-    sea_level: int | None = None
-    grnd_level: int | None = None
+class Temperature(ORM, metaclass=ORMMeta):
+    temp: float
+    feels_like: float
+    temp_min: float
+    temp_max: float
+    pressure: float
+    humidity: int
+    sea_level: int
+    grnd_level: int
 
 
 @dataclass
-class Wind(ORM):
-    speed: float | None = None
-    deg: int | None = None
-    gust: float | None = None
+class Wind(ORM, metaclass=ORMMeta):
+    speed: float
+    deg: int
+    gust: float
+
+
+@dataclass
+class Personal_Weather(ORM, metaclass=ORMMeta):
+    main: Temperature
+    weather: Weather
+    wind: Wind
+    dt_txt: str
 
 
 def get_json(url: str) -> dict[str, Any] | None:
@@ -78,28 +86,28 @@ def get_weather(city_name: str) -> None:
     data = get_json(f"{URL}/weather?q={city_name}&units=metric&appid={API_KEY}")
     if data is None:
         return
-    orm = Weather().upload_dict(data["weather"][0])
-    print(f"<{city_name}> Current weather: {orm.main}, description: {orm.description}")
+    data["weather"] = data["weather"][0]
+    orm = Personal_Weather.parse_json(data)
+    print(f"<{city_name}> Current weather: {orm.weather.main}, description: {orm.weather.description}")
 
 
 def get_temperature(city_name: str) -> None:
     data = get_json(f"{URL}/weather?q={city_name}&units=metric&appid={API_KEY}")
     if data is None:
         return
-    orm = Temperature().upload_dict(data["main"])
-    print(f"<{city_name}> Current temperature: {orm.temp}°C, feels like: {orm.feels_like}°C")
+    orm = Personal_Weather.parse_json(data)
+    print(f"<{city_name}> Current temperature: {orm.main.temp}°C, feels like: {orm.main.feels_like}°C")
 
 
 def get_plot_temperature(city_name: str, indicator: str) -> None:
     data = get_json(f"{URL}/forecast?q={city_name}&units=metric&appid={API_KEY}")
     if data is None:
         return
-    orm = Temperature()
     list_date, list_indicator = [], []
     for date_data in data["list"][0:5]:
-        current_orm = orm.upload_dict(date_data["main"])
-        list_indicator.append(getattr(current_orm, indicator))
-        list_date.append(date_data["dt_txt"].split()[1])
+        current_orm = Personal_Weather.parse_json(date_data)
+        list_indicator.append(getattr(current_orm.main, indicator))
+        list_date.append(current_orm.dt_txt.split()[1])
     show_plot_figure(city_name, indicator, list_date, list_indicator)
 
 
@@ -107,13 +115,12 @@ def get_plot_weather(city_name: str) -> None:
     data = get_json(f"{URL}/forecast?q={city_name}&units=metric&appid={API_KEY}")
     if data is None:
         return
-    orm = Wind()
     list_date, list_speed, list_gust = [], [], []
     for date_data in data["list"][0:5]:
-        current_orm = orm.upload_dict(date_data["wind"])
-        list_speed.append(getattr(current_orm, "speed"))
-        list_gust.append(getattr(current_orm, "gust"))
-        list_date.append(date_data["dt_txt"].split()[1])
+        current_orm = Personal_Weather.parse_json(date_data)
+        list_speed.append(getattr(current_orm.wind, "speed"))
+        list_gust.append(getattr(current_orm.wind, "gust"))
+        list_date.append(current_orm.dt_txt.split()[1])
     show_plot_bar(list_date, list_speed, list_gust)
 
 
