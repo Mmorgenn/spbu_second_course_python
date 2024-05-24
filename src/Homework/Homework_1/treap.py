@@ -87,8 +87,8 @@ class Node(Generic[Key, Value]):
 
 
 class Treap(MutableMapping):
-    def __init__(self, root: Node | None = None) -> None:
-        self.root: Node | None = root
+    def __init__(self) -> None:
+        self.root: Node | None = None
 
     def __getitem__(self, key: Key) -> Value | None:
         node = self._get_node(key)
@@ -116,7 +116,7 @@ class Treap(MutableMapping):
         node_smaller, node_bigger = self.root.split(key)
         if node_bigger is None:
             # Otherwise mypy will not understand
-            raise KeyError("There is no such key")
+            raise RuntimeError("An unintended error has occurred")
         node_bigger = node_bigger._del_smallest()
         if node_smaller is None:
             self.root = node_bigger
