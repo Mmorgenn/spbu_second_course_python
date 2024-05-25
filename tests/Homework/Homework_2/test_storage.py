@@ -147,11 +147,7 @@ def test_change_key(data, data_exp, key, key_new):
 
 @pytest.mark.parametrize(
     "data,action",
-    (
-        (dict(), FirstInsertAction(12)),
-        ([1, 2, 3, 4], ChangeKeyAction(0, 2)),
-        ({"a": 123}, FirstDelAction())
-    ),
+    ((dict(), FirstInsertAction(12)), ([1, 2, 3, 4], ChangeKeyAction(0, 2)), ({"a": 123}, FirstDelAction())),
 )
 def test_wrong_collection(data, action):
     pcs = PerformedCommandStorage(data)
