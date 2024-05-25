@@ -5,7 +5,7 @@ from src.Homework.Homework_2.command_storage import *
 
 class Tester_PCS:
     def __init__(self, data, data_exp, action):
-        self.storage = PCS(data)
+        self.storage = PerformedCommandStorage(data)
         self.data = data
         self.data_exp = data_exp
         self.action = action
@@ -53,7 +53,7 @@ def test_last_del(data, data_exp):
 
 
 def test_empty_data():
-    pcs = PCS([])
+    pcs = PerformedCommandStorage([])
     with pytest.raises(IndexError):
         pcs.apply_action(FirstDelAction())
 
@@ -149,13 +149,12 @@ def test_change_key(data, data_exp, key, key_new):
     "data,action",
     (
         (dict(), FirstInsertAction(12)),
-        (deque(), ChangeKeyAction(0, 1)),
-        ((1, 2, 3, 4), DelAction(2)),
-        ({1, 2, 3, 4}, AddValueAction(0, -10)),
+        ([1, 2, 3, 4], ChangeKeyAction(0, 2)),
+        ({"a": 123}, FirstDelAction())
     ),
 )
 def test_wrong_collection(data, action):
-    pcs = PCS(data)
+    pcs = PerformedCommandStorage(data)
     with pytest.raises(AttributeError):
         pcs.apply_action(action)
 
@@ -170,7 +169,7 @@ def test_wrong_collection(data, action):
     ),
 )
 def test_index_error(data, action):
-    pcs = PCS(data)
+    pcs = PerformedCommandStorage(data)
     with pytest.raises(IndexError):
         pcs.apply_action(action)
 
@@ -186,7 +185,7 @@ def test_index_error(data, action):
     ),
 )
 def test_wrong_key(data, action):
-    pcs = PCS(data)
+    pcs = PerformedCommandStorage(data)
     with pytest.raises(KeyError):
         pcs.apply_action(action)
 
@@ -200,6 +199,6 @@ def test_wrong_key(data, action):
     ),
 )
 def test_change_key_error(data, key, key_new):
-    pcs = PCS(data)
+    pcs = PerformedCommandStorage(data)
     with pytest.raises(KeyError):
         pcs.apply_action(ChangeKeyAction(key, key_new))

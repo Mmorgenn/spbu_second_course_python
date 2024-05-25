@@ -12,20 +12,7 @@ LIST_COLLECTIONS = """Choose collection:
 (2) dict
 (3) deque
 >>> """
-LIST_COMMANDS = """>>> Commands list:
-# first_insert value
-# last_insert value
-# first_del
-# last_del
-# add_value key value
-# subtract_value key value
-# move key_from key_to
-# change_value key new_value
-# insert key value
-# del key
-# change_key key_from, key_to
-+ All arguments - int +
-"""
+LIST_COMMANDS = f'>>> Commands list: {" <> ".join(ACTIONS.storage.keys())}'
 
 
 def choose_collection() -> list | dict | deque:
@@ -43,7 +30,7 @@ def choose_collection() -> list | dict | deque:
 
 def main() -> None:
     collection = choose_collection()
-    command_storage = PCS(collection)
+    command_storage = PerformedCommandStorage(collection)
     while True:
         user_command = input(USER_INPUT).split()
 
@@ -77,7 +64,7 @@ def main() -> None:
             print(COLLECTION_ERROR)
         except IndexError:
             print(INDEX_ERROR)
-        except KeyError as e:
+        except KeyError:
             print(KEY_ERROR)
 
 
