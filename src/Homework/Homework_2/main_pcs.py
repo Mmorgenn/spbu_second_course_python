@@ -4,7 +4,6 @@ USER_INPUT = "Input command (command list: help) : "
 EMPTY_ERROR = ">>> [ERROR] Empty command"
 NO_ACTION_ERROR = ">>> [ERROR] No such action"
 UNDO_ERROR = ">>> [ERROR] There are no any actions for undo"
-COLLECTION_ERROR = ">>> [ERROR] Incorrect collention"
 INDEX_ERROR = ">>> [ERROR] Index out of range"
 KEY_ERROR = ">>> [ERROR] Incorrect key"
 LIST_COLLECTIONS = """Choose collection:
@@ -12,7 +11,7 @@ LIST_COLLECTIONS = """Choose collection:
 (2) dict
 (3) deque
 >>> """
-LIST_COMMANDS = f'>>> Commands list: {" <> ".join(ACTIONS.storage.keys())}'
+LIST_COMMANDS = f'>>> Commands list: {" | ".join(ACTIONS.storage.keys())}'
 
 
 def choose_collection() -> list | dict | deque:
@@ -30,6 +29,7 @@ def choose_collection() -> list | dict | deque:
 
 def main() -> None:
     collection = choose_collection()
+    type_collection = " <sequence>" if isinstance(collection, S) else " <mapping>"
     command_storage = PerformedCommandStorage(collection)
     while True:
         user_command = input(USER_INPUT).split()
@@ -53,15 +53,11 @@ def main() -> None:
                 return
 
         try:
-            action = ACTIONS.dispatch(user_command.pop(0))
+            action = ACTIONS.dispatch(user_command.pop(0) + type_collection)
             command_storage.apply_action(action(*[int(i) for i in user_command]))
             print(f">>> {command_storage.data}")
         except ValueError:
             print(NO_ACTION_ERROR)
-        except TypeError:
-            print(NO_ACTION_ERROR)
-        except AttributeError:
-            print(COLLECTION_ERROR)
         except IndexError:
             print(INDEX_ERROR)
         except KeyError:

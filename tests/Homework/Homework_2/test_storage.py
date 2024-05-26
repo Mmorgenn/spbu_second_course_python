@@ -62,8 +62,8 @@ def test_empty_data():
     "data,data_exp,key,value",
     (
         ([100], [0], 0, -100),
-        ([1, 1, 1, 1, 1], [1, 1, 2, 1, 1], 2, 1),
-        ({"a": 123, "b": 78, "c": 56}, {"a": 123, "b": 78, "c": 78}, "c", 22),
+        ([1, 1, 1, 1, 1], [1, 1, 1, 2, 1], 3, 1),
+        ([123, 78, 56], [123, 78, 78], 2, 22),
         (deque([12, 13, 14]), deque([12, 13, 0]), 2, -14),
     ),
 )
@@ -77,7 +77,7 @@ def test_add_value(data, data_exp, key, value):
     (
         ([100], [0], 0, 100),
         ([1, 1, 1, 1, 1], [1, 1, 5, 1, 1], 2, -4),
-        ({"a": 123, "b": 78, "c": 56}, {"a": 123, "b": 78, "c": 78}, "c", -22),
+        ([123, 78, 56], [123, 78, 78], 2, -22),
         (deque([12, 13, 14]), deque([12, 13, 12]), 2, 2),
     ),
 )
@@ -90,10 +90,9 @@ def test_subtract_value(data, data_exp, key, value):
     "data,data_exp,key_from,key_to",
     (
         (
-            ([1, 2], [2, 1], 1, 0),
-            ([1, 3, 1, 4, 1], [1, 4, 1, 3, 1], 1, 3),
+            ({"a": 1, "b": 2}, {"a": 2, "b": 1}, "a", "b"),
             ({"amogus": 707, "a": 101, "b": 102}, {"amogus": 707, "b": 101, "a": 102}, "a", "b"),
-            (deque([12, 13, 14]), deque([13, 12, 14]), 0, 1),
+            ({"banana": 12, "apple": 32, "orange": 13}, {"banana": 32, "apple": 12, "orange": 13}, "apple", "banana"),
         )
     ),
 )
@@ -105,10 +104,10 @@ def test_move(data, data_exp, key_from, key_to):
 @pytest.mark.parametrize(
     "data,data_exp,key,value",
     (
-        ([100], [-100], 0, -100),
-        ([1, 1, 1, 1, 1], [1, 1, 2, 1, 1], 2, 2),
         ({"a": 123, "b": 78, "c": 56}, {"a": 123, "b": 78, "c": 7878}, "c", 7878),
-        (deque([12, 13, 14]), deque([12, 13, -14]), 2, -14),
+        ({"a": 1, "b": 2}, {"a": 1, "b": 2}, "a", 1),
+        ({"amogus": 707, "a": 101, "b": 102}, {"amogus": 707, "a": 30, "b": 102}, "a", 30),
+        ({"banana": 12, "apple": 32, "orange": 13}, {"banana": 12, "apple": 32, "orange": 0}, "orange", 0),
     ),
 )
 def test_change_value(data, data_exp, key, value):
@@ -123,12 +122,52 @@ def test_change_value(data, data_exp, key, value):
         ([1, 1, 1, 1], [1, 1, 2, 1, 1], 2, 2),
         ([1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5], 0, 0),
         ([1, 2, 3, 4, 5], [1, 2, 3, 4, 6, 5], 4, 6),
-        ({"a": 123, "b": 78}, {"a": 123, "b": 78, "c": 56}, "c", 56),
         (deque([12, 14]), deque([12, 13, 14]), 1, 13),
     ),
 )
-def test_change_value(data, data_exp, key, value):
+def test_insert(data, data_exp, key, value):
     tester = Tester_PCS(data, data_exp, InsertAction(key, value))
+    assert tester.apply_test() and tester.undo_test()
+
+
+@pytest.mark.parametrize(
+    "data,data_exp,key,value",
+    (
+        (dict(), {"a": 100}, "a", 100),
+        ({"a": 1, "b": 2}, {"a": 1, "b": 2, "c": 3}, "c", 3),
+        ({"amogus": 707, "a": 102}, {"amogus": 707, "a": 102, "buu": -10}, "buu", -10),
+    ),
+)
+def test_set_value(data, data_exp, key, value):
+    tester = Tester_PCS(data, data_exp, SetValueAction(key, value))
+    assert tester.apply_test() and tester.undo_test()
+
+
+@pytest.mark.parametrize(
+    "data,data_exp,index",
+    (
+        ([100], [], 0),
+        ([1, 1, 1, 1], [1, 1, 1], 1),
+        ([1, 2, 3, 4, 5], [2, 3, 4, 5], 0),
+        ([1, 2, 3, 4, 5], [1, 2, 3, 4], 4),
+        (deque([12, 14]), deque([12]), 1),
+    ),
+)
+def test_pop(data, data_exp, index):
+    tester = Tester_PCS(data, data_exp, PopAction(index))
+    assert tester.apply_test() and tester.undo_test()
+
+
+@pytest.mark.parametrize(
+    "data,data_exp,key",
+    (
+        ({"a": 100}, dict(), "a"),
+        ({"a": 1, "b": 202}, {"b": 202}, "a"),
+        ({"amogus": 707, "a": 102, "buu": -10}, {"a": 102, "buu": -10}, "amogus"),
+    ),
+)
+def test_del(data, data_exp, key):
+    tester = Tester_PCS(data, data_exp, DelAction(key))
     assert tester.apply_test() and tester.undo_test()
 
 
@@ -147,21 +186,9 @@ def test_change_key(data, data_exp, key, key_new):
 
 @pytest.mark.parametrize(
     "data,action",
-    ((dict(), FirstInsertAction(12)), ([1, 2, 3, 4], ChangeKeyAction(0, 2)), ({"a": 123}, FirstDelAction())),
-)
-def test_wrong_collection(data, action):
-    pcs = PerformedCommandStorage(data)
-    with pytest.raises(AttributeError):
-        pcs.apply_action(action)
-
-
-@pytest.mark.parametrize(
-    "data,action",
     (
-        ([1, 2, 3, 4], AddValueAction(4, 100)),
         ([1], InsertAction(-2, 2)),
-        (deque([1, 2, 3, 4]), DelAction(100)),
-        (deque([1, 2, 3, 4]), ChangeValueAction(-1, 200)),
+        (deque([1, 2, 3, 4]), PopAction(100)),
     ),
 )
 def test_index_error(data, action):
@@ -173,8 +200,7 @@ def test_index_error(data, action):
 @pytest.mark.parametrize(
     "data,action",
     (
-        ([1, 2, 3, 4], AddValueAction("chtoto_ne_tak?", 100)),
-        ([1], InsertAction("slomalos", 2)),
+        ({"slomalos": 3}, SetValueAction("slomalos", 2)),
         ({"bup": 123, "super": 856}, DelAction("good")),
         ({"weather": 0, "city": 1, "name": 0}, ChangeValueAction("position", 1)),
         ({"tut_nichego": 8348, "tochno_nichego": 454}, MoveAction("chtoto_est", "chegoto_net")),
