@@ -3,11 +3,11 @@ from json import loads
 
 import pytest
 
-from src.Homework.Homework_3.orm import ORM, JsonError, ORMMeta
+from src.Homework.Homework_3.orm import JsonError, ORMMeta, dump_dataclass
 
 
 @dataclass
-class Product(ORM, metaclass=ORMMeta):
+class Product(metaclass=ORMMeta):
     name: str
     price: int
     rating: int
@@ -15,27 +15,23 @@ class Product(ORM, metaclass=ORMMeta):
 
 
 @dataclass
-class Weather(ORM, metaclass=ORMMeta):
+class Weather(metaclass=ORMMeta):
     temp: float
     wind_speed: float
     humidity: int
 
 
 @dataclass
-class Person(ORM, metaclass=ORMMeta):
+class Person(metaclass=ORMMeta):
     name: str
     surname: str
     age: int
 
 
 @dataclass
-class Worker(ORM, metaclass=ORMMeta):
+class Worker(metaclass=ORMMeta):
     info: Person
     profession: str
-
-
-class Foo(ORM):
-    pass
 
 
 @pytest.mark.parametrize(
@@ -105,7 +101,7 @@ def test_get_item_branching(data, key, expected):
 )
 def test_dump(orm, data, expected):
     current_orm = orm.parse_json(data)
-    result = current_orm.dump()
+    result = dump_dataclass(current_orm)
     assert loads(result) == expected
 
 
@@ -138,7 +134,7 @@ def test_dump(orm, data, expected):
 def test_dump_changed(orm, data, key, value, expected):
     current_orm = orm.parse_json(data)
     setattr(current_orm, key, value)
-    result = current_orm.dump()
+    result = dump_dataclass(current_orm)
     assert loads(result) == expected
 
 

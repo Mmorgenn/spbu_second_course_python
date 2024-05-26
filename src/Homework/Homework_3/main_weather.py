@@ -1,3 +1,4 @@
+import os
 from argparse import ArgumentParser
 from dataclasses import dataclass
 from typing import Any
@@ -5,14 +6,14 @@ from typing import Any
 import matplotlib.pyplot as plt
 import requests
 
-from src.Homework.Homework_3.orm import ORM, ORMMeta
+from src.Homework.Homework_3.orm import ORMMeta
 
 URL = "https://api.openweathermap.org/data/2.5"
-API_KEY = "69122dc7f1c80846ab51a95cab1062de"
+API_KEY = os.getenv("WEATHER_API_KEY")
 
 
 @dataclass
-class Weather(ORM, metaclass=ORMMeta):
+class Weather(metaclass=ORMMeta):
     id: int
     main: str
     description: str
@@ -20,7 +21,7 @@ class Weather(ORM, metaclass=ORMMeta):
 
 
 @dataclass
-class Temperature(ORM, metaclass=ORMMeta):
+class Temperature(metaclass=ORMMeta):
     temp: float
     feels_like: float
     temp_min: float
@@ -32,14 +33,14 @@ class Temperature(ORM, metaclass=ORMMeta):
 
 
 @dataclass
-class Wind(ORM, metaclass=ORMMeta):
+class Wind(metaclass=ORMMeta):
     speed: float
     deg: int
     gust: float
 
 
 @dataclass
-class Personal_Weather(ORM, metaclass=ORMMeta):
+class Personal_Weather(metaclass=ORMMeta):
     main: Temperature
     weather: Weather
     wind: Wind

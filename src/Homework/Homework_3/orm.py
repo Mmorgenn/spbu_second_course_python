@@ -2,7 +2,7 @@ import json
 from dataclasses import asdict, dataclass
 from typing import Any, Generic, Type, TypeVar
 
-T = TypeVar("T", bound="ORM")
+T = TypeVar("T")
 
 
 class JsonError(Exception):
@@ -15,6 +15,8 @@ class ORMDescriptor(Generic[T]):
         self.value = None
 
     def __get__(self, instance: T, owner: Type[T]) -> None:
+        if instance is None:
+            return self
         if not hasattr(instance, "__data__"):
             raise JsonError("Json data is missing")
 
@@ -30,36 +32,27 @@ class ORMDescriptor(Generic[T]):
 
 
 class ORMMeta(type):
-    def __new__(cls, name: Any, bases: Any, dct: dict) -> type:
-        branches = {}
-        attrs = []
-        for field_name, field_type in dct["__annotations__"].items():
-            if issubclass(field_type, ORM):
+    def __init__(cls, name: str, bases: Any, dct: dict) -> None:
+        branches = dict()
+        for field_name, field_type in cls.__annotations__.items():
+            if type(field_type) is ORMMeta:
                 branches[field_name] = field_type
+                setattr(cls, field_name, None)
             else:
-                attrs.append(field_name)
-            dct[field_name] = None
+                setattr(cls, field_name, ORMDescriptor(field_name))
+        setattr(cls, "__branches__", branches)
+        super(ORMMeta, cls).__init__(name, bases, dct)
 
-        dct["__branches__"] = branches
-        dct["__attrs__"] = attrs
-        return super().__new__(cls, name, bases, dct)
-
-
-@dataclass
-class ORM:
-    @classmethod
     def parse_json(cls: Type[T], data: dict) -> T:
-        for name in getattr(cls, "__attrs__", []):
-            setattr(cls, name, ORMDescriptor(name))
         setattr(cls, "__data__", data)
-        new_cls = cls()
-        for name, bcls in getattr(cls, "__branches__", {}).items():
-            small_data = data.get(name, None)
+        obj = cls(*[None for _ in range(len(cls.__annotations__.keys()))])
+        for branch_name, branch_class in getattr(cls, "__branches__", {}).items():
+            small_data = data.get(branch_name, None)
             if small_data is None:
-                raise JsonError(f"The {name} is missing in json data")
-            setattr(new_cls, name, bcls.parse_json(small_data))
+                raise JsonError(f"The {branch_name} is missing in json data")
+            setattr(obj, branch_name, branch_class.parse_json(small_data))
+        return obj
 
-        return new_cls
 
-    def dump(self) -> str:
-        return json.dumps(asdict(self))
+def dump_dataclass(obj: Any) -> str:
+    return json.dumps(asdict(obj))
