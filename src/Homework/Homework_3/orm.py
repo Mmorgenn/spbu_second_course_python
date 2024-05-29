@@ -1,6 +1,6 @@
 import json
 from dataclasses import asdict, dataclass
-from typing import Any, Generic, Type, TypeVar
+from typing import Any, Generic, List, Type, TypeVar, get_args, get_origin, get_type_hints
 
 T = TypeVar("T")
 
@@ -9,49 +9,76 @@ class JsonError(Exception):
     pass
 
 
-class ORMDescriptor(Generic[T]):
-    def __init__(self, key: str) -> None:
-        self.key = key
-        self.value = None
-
-    def __get__(self, instance: T, owner: Type[T]) -> None:
-        if instance is None:
-            return self
-        if not hasattr(instance, "__data__"):
-            raise JsonError("Json data is missing")
-
-        if self.value is None:
-            new_value = instance.__data__.get(self.key, None)
-            if new_value is None:
-                raise JsonError(f"The {self.key} is missing in json data")
-            self.value = new_value
-        return self.value
-
-    def __set__(self, instance: T, value: Any) -> None:
-        self.value = value
-
-
 class ORMMeta(type):
     def __init__(cls, name: str, bases: Any, dct: dict) -> None:
-        branches = dict()
         for field_name, field_type in cls.__annotations__.items():
-            if type(field_type) is ORMMeta:
-                branches[field_name] = field_type
-                setattr(cls, field_name, None)
+            if hasattr(field_type, "__args__") and isinstance(field_type.__args__[0], ORMMeta):
+                setattr(cls, field_name, BranchDescriptor(field_name, field_type.__args__[0]))
+            elif isinstance(field_type, ORMMeta):
+                setattr(cls, field_name, BranchDescriptor(field_name, field_type))
             else:
                 setattr(cls, field_name, ORMDescriptor(field_name))
-        setattr(cls, "__branches__", branches)
         super(ORMMeta, cls).__init__(name, bases, dct)
 
     def parse_json(cls: Type[T], data: dict) -> T:
         setattr(cls, "__data__", data)
-        obj = cls(*[None for _ in range(len(cls.__annotations__.keys()))])
-        for branch_name, branch_class in getattr(cls, "__branches__", {}).items():
-            small_data = data.get(branch_name, None)
-            if small_data is None:
-                raise JsonError(f"The {branch_name} is missing in json data")
-            setattr(obj, branch_name, branch_class.parse_json(small_data))
-        return obj
+        return cls()
+
+
+class ORMDescriptor(Generic[T]):
+    def __init__(self, key: str) -> None:
+        self.key = key
+
+    def __get__(self, instance: T, owner: Type[T]) -> Any:
+        if instance is None:
+            return None
+        if not hasattr(instance, "__data__"):
+            raise JsonError("Json data is missing")
+
+        if not hasattr(instance, f"_{self.key}"):
+            if self.key not in instance.__data__.keys():
+                raise JsonError(f"The {self.key} is missing in json data")
+            value = instance.__data__.get(self.key)
+            setattr(instance, f"_{self.key}", value)
+            return value
+        return getattr(instance, f"_{self.key}")
+
+    def __set__(self, instance: T, value: Any) -> None:
+        if value is not None:
+            setattr(instance, f"_{self.key}", value)
+
+
+class BranchDescriptor(Generic[T]):
+    def __init__(self, name: str, orm_cls: ORMMeta) -> None:
+        self.name = name
+        self.orm_cls = orm_cls
+
+    def __get__(self, instance: T, owner: Type[T]) -> Any:
+        if instance is None:
+            return None
+        if not hasattr(instance, "__data__"):
+            raise JsonError("Json data is missing")
+        if not hasattr(instance, f"_{self.name}"):
+            if self.name not in instance.__data__.keys():
+                raise JsonError(f"The {self.name} is missing in json data")
+            data = instance.__data__.get(self.name)
+
+            if type(data) is list:
+                result: list[Any] = []
+                for i in range(len(data)):
+                    result.append(self.orm_cls.parse_json(data[i]))
+                setattr(instance, f"_{self.name}", result)
+                return result
+
+            orm: Any = self.orm_cls.parse_json(data)
+            setattr(instance, f"_{self.name}", orm)
+            return orm
+
+        return getattr(instance, f"_{self.name}")
+
+    def __set__(self, instance: T, value: Any) -> None:
+        if value is not None:
+            setattr(instance, f"_{self.name}", value)
 
 
 def dump_dataclass(obj: Any) -> str:

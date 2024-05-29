@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from json import loads
+from typing import List
 
 import pytest
 
@@ -32,6 +33,11 @@ class Person(metaclass=ORMMeta):
 class Worker(metaclass=ORMMeta):
     info: Person
     profession: str
+
+
+@dataclass
+class Job(metaclass=ORMMeta):
+    workers: List[Worker]
 
 
 @pytest.mark.parametrize(
@@ -150,3 +156,21 @@ def test_get_item_error(orm, data, key):
     current_orm = orm.parse_json(data)
     with pytest.raises(JsonError):
         getattr(current_orm, key)
+
+
+def test_json_in_json():
+    orm = Worker.parse_json({"info": {"name": "Bob", "surname": "Bobov", "age": 27}, "profession": "CoolDude"})
+    assert isinstance(orm.info, Person)
+
+
+def test_list_jsons():
+    orm = Job.parse_json(
+        {
+            "workers": [
+                {"info": {"name": "Bob", "surname": "Bobov", "age": 27}, "profession": "CoolDude"},
+                {"info": {"name": "Ivan", "surname": "Ivanov", "age": 18}, "profession": "Barber"},
+                {"info": {"name": "Den", "surname": "Ben", "age": 33}, "profession": "Butcher"},
+            ]
+        }
+    )
+    assert len(orm.workers) == 3 and all([isinstance(i, Worker) for i in orm.workers])

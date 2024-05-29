@@ -40,7 +40,7 @@ class Wind(metaclass=ORMMeta):
 
 
 @dataclass
-class Personal_Weather(metaclass=ORMMeta):
+class PersonalWeather(metaclass=ORMMeta):
     main: Temperature
     weather: Weather
     wind: Wind
@@ -88,7 +88,7 @@ def get_weather(city_name: str) -> None:
     if data is None:
         return
     data["weather"] = data["weather"][0]
-    orm = Personal_Weather.parse_json(data)
+    orm = PersonalWeather.parse_json(data)
     print(f"<{city_name}> Current weather: {orm.weather.main}, description: {orm.weather.description}")
 
 
@@ -96,7 +96,7 @@ def get_temperature(city_name: str) -> None:
     data = get_json(f"{URL}/weather?q={city_name}&units=metric&appid={API_KEY}")
     if data is None:
         return
-    orm = Personal_Weather.parse_json(data)
+    orm = PersonalWeather.parse_json(data)
     print(f"<{city_name}> Current temperature: {orm.main.temp}°C, feels like: {orm.main.feels_like}°C")
 
 
@@ -106,7 +106,7 @@ def get_plot_temperature(city_name: str, indicator: str) -> None:
         return
     list_date, list_indicator = [], []
     for date_data in data["list"][0:5]:
-        current_orm = Personal_Weather.parse_json(date_data)
+        current_orm = PersonalWeather.parse_json(date_data)
         list_indicator.append(getattr(current_orm.main, indicator))
         list_date.append(current_orm.dt_txt.split()[1])
     show_plot_figure(city_name, indicator, list_date, list_indicator)
@@ -118,7 +118,7 @@ def get_plot_weather(city_name: str) -> None:
         return
     list_date, list_speed, list_gust = [], [], []
     for date_data in data["list"][0:5]:
-        current_orm = Personal_Weather.parse_json(date_data)
+        current_orm = PersonalWeather.parse_json(date_data)
         list_speed.append(getattr(current_orm.wind, "speed"))
         list_gust.append(getattr(current_orm.wind, "gust"))
         list_date.append(current_orm.dt_txt.split()[1])
