@@ -1,6 +1,5 @@
 from argparse import ArgumentParser
-from concurrent.futures import Executor, ProcessPoolExecutor, ThreadPoolExecutor
-from math import log2
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from random import randint
 from timeit import timeit
 
