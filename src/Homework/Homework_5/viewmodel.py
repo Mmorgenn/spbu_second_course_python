@@ -18,20 +18,16 @@ class ViewModel:
 
         self._session_callback = self._model.session.add_callback(self._session_observer)
         self._winner_callback = self._model.winner.add_callback(self._winner_observer)
-        self._exit_callback = self._model.exit.add_callback(self._exit_observer)
         self._current_view: ttk.Frame | None = None
 
     # To WinnerView
     def _winner_observer(self, winner: str) -> None:
         self.switch("winner", {"winner": winner})
 
-    # To FieldView
-    def _session_observer(self, data: dict[str, User]) -> None:
-        self.switch("field", data)
-
-    # To MenuView
-    def _exit_observer(self, value: int) -> None:
-        self.start()
+    # To FieldView/Menu
+    def _session_observer(self, data: dict[str, User | str]) -> None:
+        if "view_name" in data and type(data["view_name"]) is str:
+            self.switch(data["view_name"], data)
 
     def switch(self, name: str, data: dict) -> None:
         if name not in self._viewmodels:
@@ -58,13 +54,25 @@ class MenuViewModel(IViewModel):
 
     def _bind(self, view: MenuView) -> None:
         def chose_single_player() -> None:
-            self._model.session.value = {"user_1": SinglePlayer("user", "X"), "user_2": SinglePlayer("user", "O")}
+            self._model.session.value = {
+                "view_name": "field",
+                "user_1": SinglePlayer("user", "X"),
+                "user_2": SinglePlayer("user", "O"),
+            }
 
         def chose_bot_easy() -> None:
-            self._model.session.value = {"user_1": SinglePlayer("user", "X"), "user_2": Bot_Easy("O")}
+            self._model.session.value = {
+                "view_name": "field",
+                "user_1": SinglePlayer("user", "X"),
+                "user_2": Bot_Easy("O"),
+            }
 
         def chose_bot_hard() -> None:
-            self._model.session.value = {"user_1": SinglePlayer("user", "X"), "user_2": Bot_Hard("O")}
+            self._model.session.value = {
+                "view_name": "field",
+                "user_1": SinglePlayer("user", "X"),
+                "user_2": Bot_Hard("O"),
+            }
 
         view.button_single_player.config(command=lambda: chose_single_player())
         view.button_bot_easy.config(command=lambda: chose_bot_easy())
@@ -135,10 +143,10 @@ class WinnerViewModel(IViewModel):
         view.result_label.config(text=f"Result: {winner}")
 
         def restart() -> None:
-            self._model.session.value = {}
+            self._model.session.value = {"view_name": "field"}
 
         def exit_to_menu() -> None:
-            self._model.exit.value = 1
+            self._model.session.value = {"view_name": "menu"}
 
         view.button_new_game.config(command=lambda: restart())
         view.button_menu.config(command=lambda: exit_to_menu())

@@ -83,8 +83,7 @@ class TicTacToeModel:
         self.cycle_players: cycle[User | None] = cycle([])
         self.current_player: Observable[User | None] = Observable()
         self.winner: Observable[str] = Observable()
-        self.session: Observable[dict[str, User]] = Observable()
-        self.exit: Observable[int] = Observable()
+        self.session: Observable[dict[str, User | str]] = Observable()
 
     def update_current_player(self) -> None:
         self.current_player.value = next(self.cycle_players)
@@ -128,7 +127,7 @@ class TicTacToeModel:
     def restart(self) -> None:
         if not isinstance(self.user_1, User) or not isinstance(self.user_2, User):
             raise KeyError("Users are not found")
-        if self.user_2.side == self.winner.value:
-            self.set_users(self.user_2, self.user_1)
-        else:
+        if self.user_1.side == self.winner.value:
             self.set_users(self.user_1, self.user_2)
+        else:
+            self.set_users(self.user_2, self.user_1)
