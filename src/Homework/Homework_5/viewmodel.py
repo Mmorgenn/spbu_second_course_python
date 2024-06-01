@@ -99,9 +99,9 @@ class FieldViewModel(IViewModel):
             self._model.restart()
 
         # 2) Add buttons display
-        posssitions = []
+        possitions = []
         for pos in range(9):
-            posssitions.append(self._model.field[pos].add_callback(write_move(pos)))
+            possitions.append(self._model.field[pos].add_callback(write_move(pos)))
 
         # 3) Add callbacks for current player and choose current player
         current_player_callback = self._model.current_player.add_callback(lambda user: make_move_bot(user))
@@ -116,12 +116,12 @@ class FieldViewModel(IViewModel):
             def destroy() -> None:
                 original_destroy()
                 current_player_callback()
-                for pos in posssitions:
+                for pos in possitions:
                     pos()
 
             return destroy
 
-        view.destroy = _destroy_wrapper(view.destroy)
+        view.destroy = _destroy_wrapper(view.destroy)  # type: ignore
 
     def start(self, root: Tk, data: dict[str, User | str]) -> ttk.Frame:
         frame = FieldView(root)

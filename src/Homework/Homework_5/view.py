@@ -12,7 +12,7 @@ class MenuView(ttk.Frame):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
-        self.title_label = ttk.Label(self, text="TicTacToe", font=("Arial", 72))
+        self.title_label = ttk.Label(self, text="Tic Tac Toe", font=("Arial", 72))
         self.title_label.grid(row=0, column=0, columnspan=3, pady=100)
 
         self.button_single_player = ttk.Button(self, text=self.SINGLE_PLAYER, width=self.button_width)

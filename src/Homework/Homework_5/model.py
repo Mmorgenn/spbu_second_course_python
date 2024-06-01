@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from itertools import cycle
 from random import choice
-from typing import Iterable
 
 from src.Homework.Homework_5.observer import Observable
 
@@ -52,22 +51,21 @@ class Bot_Hard(User):
         if len(possible_pos) == 9:
             return 4
         win_pos = self.get_win_pos(field, possible_pos, self.side)
-        if len(win_pos) > 0:
-            return win_pos[0]
+        if win_pos is not None:
+            return win_pos
         enemys_side = "X" if self.side == "O" else "O"
         importan_pos = self.get_win_pos(field, possible_pos, enemys_side)
-        if len(importan_pos) > 0:
-            return importan_pos[0]
+        if importan_pos is not None:
+            return importan_pos
         return choice(possible_pos)
 
-    def get_win_pos(self, field: list[Observable[str]], possible_pos: list[int], side: str) -> list[int]:
-        win_pos = []
+    def get_win_pos(self, field: list[Observable[str]], possible_pos: list[int], side: str) -> int | None:
         for pos in possible_pos:
             field_pos = [pos.value for pos in field]
             field_pos[pos] = side
             if self.check_winner(field_pos, side):
-                win_pos.append(pos)
-        return win_pos
+                return pos
+        return None
 
     def check_winner(self, field: list[str | None], side: str) -> bool:
         for pos in WIN_POS:
