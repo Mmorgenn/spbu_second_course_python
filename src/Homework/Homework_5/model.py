@@ -1,9 +1,12 @@
+import socket
 from abc import ABCMeta, abstractmethod
 from itertools import cycle
 from random import choice
+from typing import Any, TypeVar
 
 from src.Homework.Homework_5.observer import Observable
 
+T = TypeVar("T", bound="User")
 WIN_POS = ((0, 1, 2), (3, 4, 5), (6, 7, 8), (0, 3, 6), (1, 4, 7), (2, 5, 8), (0, 4, 8), (2, 4, 6))
 
 
@@ -12,40 +15,41 @@ class User(metaclass=ABCMeta):
         self.name = name
         self.side = side
 
+    def set_move(self, field: list[Observable[str]], possible_pos: list[int], pos: int) -> None:
+        field[pos].value = self.side
+        possible_pos.remove(pos)
+
     @abstractmethod
     def make_move(self, field: list[Observable[str]], possible_pos: list[int], pos: int | None) -> None:
         raise NotImplementedError
 
 
 class SinglePlayer(User):
-    def __init__(self, name: str, side: str) -> None:
-        super().__init__(name, side)
+    def __init__(self, side: str) -> None:
+        super().__init__("user", side)
 
     def make_move(self, field: list[Observable[str]], possible_pos: list[int], pos: int | None) -> None:
         if pos is None:
             return
-        field[pos].value = self.side
-        possible_pos.remove(pos)
+        self.set_move(field, possible_pos, pos)
 
 
-class Bot_Easy(User):
+class BotEasy(User):
     def __init__(self, side: str) -> None:
         super().__init__("bot", side)
 
     def make_move(self, field: list[Observable[str]], possible_pos: list[int], pos: int | None) -> None:
         move_pos = choice(possible_pos)
-        field[move_pos].value = self.side
-        possible_pos.remove(move_pos)
+        self.set_move(field, possible_pos, move_pos)
 
 
-class Bot_Hard(User):
+class BotHard(User):
     def __init__(self, side: str) -> None:
         super().__init__("bot", side)
 
     def make_move(self, field: list[Observable[str]], possible_pos: list[int], pos: int | None) -> None:
         move_pos = self.choose_move(field, possible_pos)
-        field[move_pos].value = self.side
-        possible_pos.remove(move_pos)
+        self.set_move(field, possible_pos, move_pos)
 
     def choose_move(self, field: list[Observable[str]], possible_pos: list[int]) -> int:
         if len(possible_pos) == 9:
@@ -74,6 +78,32 @@ class Bot_Hard(User):
         return False
 
 
+class ActivePlayer(User):
+    def __init__(self, side: str, conn: socket.socket) -> None:
+        super().__init__("active", side)
+        self.conn = conn
+
+    def make_move(self, field: list[Observable[str]], possible_pos: list[int], pos: int | None) -> None:
+        if pos is None:
+            return
+        self.conn.sendall(bytes(f"{pos} {self.conn.getsockname()[-1]}", encoding="UTF-8"))
+        self.set_move(field, possible_pos, pos)
+
+
+class WaiterPlayer(User):
+    def __init__(self, side: str, conn: socket.socket) -> None:
+        super().__init__("waiter", side)
+        self.conn = conn
+
+    def make_move(self, field: list[Observable[str]], possible_pos: list[int], pos: int | None) -> None:
+        while True:
+            data = self.conn.recv(1024)
+            if data:
+                pos = int(data.decode("utf-8"))
+                self.set_move(field, possible_pos, pos)
+                return
+
+
 class TicTacToeModel:
     def __init__(self) -> None:
         self.field: list[Observable[str]] = [Observable() for _ in range(9)]
@@ -83,7 +113,8 @@ class TicTacToeModel:
         self.cycle_players: cycle[User | None] = cycle([])
         self.current_player: Observable[User | None] = Observable()
         self.winner: Observable[str] = Observable()
-        self.session: Observable[dict[str, User | str]] = Observable()
+        self.session: Observable[dict[str, Any]] = Observable()
+        self.conn: socket.socket | None = None
 
     def update_current_player(self) -> None:
         self.current_player.value = next(self.cycle_players)
@@ -131,3 +162,16 @@ class TicTacToeModel:
             self.set_users(self.user_1, self.user_2)
         else:
             self.set_users(self.user_2, self.user_1)
+
+    def connect(self, ip: str, port: int = 55555) -> None:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((ip, port))
+        self.conn = sock
+        while True:
+            data = sock.recv(1024)
+            if data:
+                if data.decode("utf-8") == "host":
+                    self.set_users(ActivePlayer("X", self.conn), WaiterPlayer("O", self.conn))
+                else:
+                    self.set_users(WaiterPlayer("X", self.conn), ActivePlayer("O", self.conn))
+                break

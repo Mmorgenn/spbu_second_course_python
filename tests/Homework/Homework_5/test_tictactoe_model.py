@@ -1,6 +1,6 @@
 import pytest
 
-from src.Homework.Homework_5.model import Bot_Hard, SinglePlayer, TicTacToeModel
+from src.Homework.Homework_5.model import BotHard, SinglePlayer, TicTacToeModel
 
 
 class Tester:
@@ -15,10 +15,10 @@ class Tester:
         self.model.possible_pos = possible_pos
 
     def set_single_player(self):
-        self.model.set_users(SinglePlayer("user", "X"), SinglePlayer("user", "O"))
+        self.model.set_users(SinglePlayer("X"), SinglePlayer("O"))
 
     def set_bot_hard(self):
-        self.model.set_users(SinglePlayer("user", "X"), Bot_Hard("O"))
+        self.model.set_users(SinglePlayer("X"), BotHard("O"))
 
 
 @pytest.mark.parametrize(
